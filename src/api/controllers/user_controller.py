@@ -9,11 +9,28 @@ class UserController:
         self.user_service = UserService()
 
     def setup_routes(self):
+        self.bp.route('/me', methods=['GET'])(login_required(self.get_own_profile))
         self.bp.route('/', methods=['GET'])(login_required(self.list_users))
         self.bp.route('/<int:user_id>', methods=['GET'])(login_required(self.get_user))
         self.bp.route('/', methods=['POST'])(admin_required(self.create_user))
         self.bp.route('/<int:user_id>', methods=['PUT'])(admin_required(self.update_user))
         self.bp.route('/<int:user_id>', methods=['DELETE'])(admin_required(self.delete_user))
+
+    def get_own_profile(self):
+        user = request.current_user
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+
+        user_dict = {
+            "id": user.id,
+            "username": user.username,
+            "nama_lengkap": user.nama_lengkap,
+            "role": user.role,
+            "divisi": user.divisi
+        }
+
+        return jsonify({"user": user_dict}), 200
+    
 
     def list_users(self):
         # Get query parameters with defaults
