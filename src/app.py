@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from src.api.controllers.auth_controller import auth_bp
 from src.api.controllers.user_controller import user_bp
+from src.api.controllers.surat_masuk_controller import surat_masuk_bp
 
 def create_app():
     app = Flask(__name__)
@@ -19,6 +20,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(surat_masuk_bp)
 
     return app
 
