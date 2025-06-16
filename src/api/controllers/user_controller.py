@@ -16,16 +16,41 @@ class UserController:
         self.bp.route('/<int:user_id>', methods=['DELETE'])(admin_required(self.delete_user))
 
     def list_users(self):
-        users = self.user_service.get_users()
+        # Get query parameters with defaults
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        search = request.args.get('search', None)
+        role = request.args.get('role', None)
+        divisi = request.args.get('divisi', None)
+
+        # Validate pagination parameters
+        if page < 1:
+            return jsonify({"message": "Page number must be greater than 0"}), 400
+        if per_page < 1 or per_page > 100:
+            return jsonify({"message": "Items per page must be between 1 and 100"}), 400
+
+        # Get users with pagination and filters
+        result = self.user_service.get_users(
+            page=page,
+            per_page=per_page,
+            search=search,
+            role=role,
+            divisi=divisi
+        )
+
+        # Format user list
         user_list = [{
             "id": u.id,
             "username": u.username,
             "nama_lengkap": u.nama_lengkap,
             "role": u.role,
             "divisi": u.divisi
-        } for u in users]
+        } for u in result["users"]]
 
-        return jsonify({"users": user_list}), 200
+        return jsonify({
+            "users": user_list,
+            "pagination": result["pagination"]
+        }), 200
 
     def get_user(self, user_id):
         user = self.user_service.get_user(user_id)

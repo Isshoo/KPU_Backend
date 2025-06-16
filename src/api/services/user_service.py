@@ -3,6 +3,7 @@ from src.database.models import User
 from werkzeug.security import generate_password_hash
 import random
 import string
+from sqlalchemy import or_
 
 class UserService:
     @staticmethod
@@ -22,11 +23,53 @@ class UserService:
         characters = string.ascii_letters + string.digits
         return ''.join(random.choice(characters) for _ in range(length))
 
-    def get_users(self):
+    def get_users(self, page=1, per_page=10, search=None, role=None, divisi=None):
         session = SessionLocal()
-        users = session.query(User).order_by(User.username.asc()).all()
-        session.close()
-        return users
+        try:
+            # Base query
+            query = session.query(User)
+
+            # Apply filters if provided
+            if search:
+                search_term = f"%{search}%"
+                query = query.filter(
+                    or_(
+                        User.username.ilike(search_term),
+                        User.nama_lengkap.ilike(search_term)
+                    )
+                )
+            
+            if role:
+                query = query.filter(User.role == role)
+            
+            if divisi:
+                query = query.filter(User.divisi == divisi)
+
+            # Get total count before pagination
+            total = query.count()
+
+            # Apply pagination
+            users = query.order_by(User.username.asc())\
+                        .offset((page - 1) * per_page)\
+                        .limit(per_page)\
+                        .all()
+
+            # Calculate pagination info
+            total_pages = (total + per_page - 1) // per_page
+
+            return {
+                "users": users,
+                "pagination": {
+                    "total": total,
+                    "per_page": per_page,
+                    "current_page": page,
+                    "total_pages": total_pages,
+                    "has_next": page < total_pages,
+                    "has_prev": page > 1
+                }
+            }
+        finally:
+            session.close()
 
     def get_user(self, user_id):
         session = SessionLocal()
