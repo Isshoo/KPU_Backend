@@ -1,0 +1,16 @@
+.env
+venv
+.venv
+__pycache__
+.DS_Store
+src/storage/hands/*
+src/storage/models/*
+src/storage/scans/*
+src/ml_models/*
+node_modules
+
+hand_scan_controller.log
+hand_scan.log
+attendance.log
+
+storage/hands/*

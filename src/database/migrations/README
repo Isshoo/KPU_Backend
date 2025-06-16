@@ -1,0 +1,25 @@
+Generic single-database configuration.
+
+jika terjadi perubahan gunakan pada database:
+alembic revision --autogenerate -m "perubahan"
+
+untuk apply perubahan ke database:
+alembic upgrade head
+
+Untuk membuat database:
+psql -U postgres
+
+Lalu di dalam psql:
+-- Buat user baru dengan password
+CREATE USER kpu_user WITH PASSWORD 'kpu123';
+
+-- Buat database baru kalau belum ada
+CREATE DATABASE kpu_db;
+
+-- Kasih hak akses ke user baru untuk database itu
+GRANT ALL PRIVILEGES ON DATABASE kpu_db TO kpu_user;
+
+-- (Opsional) Jadikan dia owner
+ALTER DATABASE kpu_db OWNER TO kpu_user;
+Lalu keluar dari psql:
+\q
