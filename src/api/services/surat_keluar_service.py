@@ -1,41 +1,41 @@
 from src.database.config import SessionLocal
-from src.database.models import SuratMasuk, User
+from src.database.models import SuratKeluar, User
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_
 
-class SuratMasukService:
+class SuratKeluarService:
     def __init__(self):
-        self.upload_folder = "src/storage/surat_masuk/"
+        self.upload_folder = "src/storage/surat_keluar/"
         os.makedirs(self.upload_folder, exist_ok=True)
 
-    def get_surat_masuk(self, page=1, per_page=10, search=None, start_date=None, end_date=None):
+    def get_surat_keluar(self, page=1, per_page=10, search=None, start_date=None, end_date=None):
         db = SessionLocal()
         try:
-            query = db.query(SuratMasuk)
+            query = db.query(SuratKeluar)
 
             # Apply filters
             if search:
                 search = f"%{search}%"
                 query = query.filter(
                     or_(
-                        SuratMasuk.nomor_surat.ilike(search),
-                        SuratMasuk.perihal.ilike(search),
-                        SuratMasuk.ditujukan_kepada.ilike(search)
+                        SuratKeluar.nomor_surat.ilike(search),
+                        SuratKeluar.perihal.ilike(search),
+                        SuratKeluar.ditujukan_kepada.ilike(search)
                     )
                 )
 
             if start_date:
-                query = query.filter(SuratMasuk.tanggal_surat >= start_date)
+                query = query.filter(SuratKeluar.tanggal_surat >= start_date)
             if end_date:
-                query = query.filter(SuratMasuk.tanggal_surat <= end_date)
+                query = query.filter(SuratKeluar.tanggal_surat <= end_date)
 
             # Get total count
             total = query.count()
 
             # Apply pagination
-            surat_list = query.order_by(SuratMasuk.tanggal_surat.desc())\
+            surat_list = query.order_by(SuratKeluar.tanggal_surat.desc())\
                 .offset((page - 1) * per_page)\
                 .limit(per_page)\
                 .all()
@@ -55,7 +55,7 @@ class SuratMasukService:
     def get_surat_by_id(self, surat_id):
         db = SessionLocal()
         try:
-            return db.query(SuratMasuk).filter(SuratMasuk.id == surat_id).first()
+            return db.query(SuratKeluar).filter(SuratKeluar.id == surat_id).first()
         finally:
             db.close()
 
@@ -73,13 +73,12 @@ class SuratMasukService:
             file.save(file_path)
 
             # Create surat
-            surat = SuratMasuk(
+            surat = SuratKeluar(
                 nomor_surat=data['nomor_surat'],
                 tanggal_surat=datetime.strptime(data['tanggal_surat'], '%Y-%m-%d'),
-                tanggal_terima=datetime.strptime(data['tanggal_terima'], '%Y-%m-%d'),
-                pengirim=data['pengirim'],
-                perihal=data['perihal'],
+                tanggal_kirim=datetime.strptime(data['tanggal_kirim'], '%Y-%m-%d'),
                 ditujukan_kepada=data['ditujukan_kepada'],
+                perihal=data['perihal'],
                 keterangan=data.get('keterangan'),
                 file_path=file_path,
                 inserted_by_id=user_id
@@ -98,7 +97,7 @@ class SuratMasukService:
     def update_surat(self, surat_id, data, file, user_id):
         db = SessionLocal()
         try:
-            surat = db.query(SuratMasuk).filter(SuratMasuk.id == surat_id).first()
+            surat = db.query(SuratKeluar).filter(SuratKeluar.id == surat_id).first()
             if not surat:
                 return None, "Surat tidak ditemukan"
 
@@ -107,14 +106,12 @@ class SuratMasukService:
                 surat.nomor_surat = data['nomor_surat']
             if 'tanggal_surat' in data:
                 surat.tanggal_surat = datetime.strptime(data['tanggal_surat'], '%Y-%m-%d')
-            if 'tanggal_terima' in data:
-                surat.tanggal_terima = datetime.strptime(data['tanggal_terima'], '%Y-%m-%d')
-            if 'pengirim' in data:
-                surat.pengirim = data['pengirim']
-            if 'perihal' in data:
-                surat.perihal = data['perihal']
+            if 'tanggal_kirim' in data:
+                surat.tanggal_kirim = datetime.strptime(data['tanggal_kirim'], '%Y-%m-%d')
             if 'ditujukan_kepada' in data:
                 surat.ditujukan_kepada = data['ditujukan_kepada']
+            if 'perihal' in data:
+                surat.perihal = data['perihal']
             if 'keterangan' in data:
                 surat.keterangan = data['keterangan']
 
@@ -144,7 +141,7 @@ class SuratMasukService:
     def delete_surat(self, surat_id):
         db = SessionLocal()
         try:
-            surat = db.query(SuratMasuk).filter(SuratMasuk.id == surat_id).first()
+            surat = db.query(SuratKeluar).filter(SuratKeluar.id == surat_id).first()
             if not surat:
                 return False, "Surat tidak ditemukan"
 
@@ -164,7 +161,7 @@ class SuratMasukService:
     def mark_as_read(self, surat_id, user_id):
         db = SessionLocal()
         try:
-            surat = db.query(SuratMasuk).filter(SuratMasuk.id == surat_id).first()
+            surat = db.query(SuratKeluar).filter(SuratKeluar.id == surat_id).first()
             if not surat:
                 return False, "Surat tidak ditemukan"
 
@@ -184,4 +181,4 @@ class SuratMasukService:
             db.close()
 
 # Create singleton instance
-surat_masuk_service = SuratMasukService() 
+surat_keluar_service = SuratKeluarService() 

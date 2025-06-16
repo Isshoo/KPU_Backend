@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Table
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from src.database.config import Base
@@ -16,6 +16,20 @@ class DivisiEnum(str, enum.Enum):
     logistik_dan_keuangan = "logistik_dan_keuangan"
     sdm_dan_parmas = "sdm_dan_parmas"
 
+# Association tables for many-to-many relationships
+surat_masuk_dibaca_oleh = Table(
+    'surat_masuk_dibaca_oleh',
+    Base.metadata,
+    Column('surat_masuk_id', Integer, ForeignKey('surat_masuk.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True)
+)
+
+surat_keluar_dibaca_oleh = Table(
+    'surat_keluar_dibaca_oleh',
+    Base.metadata,
+    Column('surat_keluar_id', Integer, ForeignKey('surat_keluar.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True)
+)
 
 class User(Base):
     __tablename__ = "users"
@@ -27,6 +41,9 @@ class User(Base):
     role = Column(Enum(RoleEnum))
     divisi = Column(Enum(DivisiEnum), nullable=True)
 
+    # Relationships
+    surat_masuk_dibaca = relationship("SuratMasuk", secondary=surat_masuk_dibaca_oleh, back_populates="dibaca_oleh")
+    surat_keluar_dibaca = relationship("SuratKeluar", secondary=surat_keluar_dibaca_oleh, back_populates="dibaca_oleh")
 
 class SuratMasuk(Base):
     __tablename__ = "surat_masuk"
@@ -41,26 +58,29 @@ class SuratMasuk(Base):
     keterangan = Column(String, nullable=True)
     file_path = Column(String, nullable=False)
     inserted_at = Column(DateTime, nullable=False)
-
     inserted_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    array_id_dibaca_oleh = Column(ARRAY(Integer), nullable=True)
 
-    inserted_by = relationship("User", foreign_keys=[inserted_by_id])
-    dibaca_oleh = relationship("User", foreign_keys=[array_id_dibaca_oleh])
+    # Relationships
+    inserted_by = relationship("User", foreign_keys=[inserted_by_id], backref="surat_masuk_inserted")
+    dibaca_oleh = relationship("User", secondary=surat_masuk_dibaca_oleh, back_populates="surat_masuk_dibaca")
 
-
-    
 class SuratKeluar(Base):
     __tablename__ = "surat_keluar"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     nomor_surat = Column(String, nullable=False)
-    tanggal_surat_keluar = Column(DateTime, nullable=False)
-    perihal = Column(String, nullable=False)
+    tanggal_surat = Column(DateTime, nullable=False)
+    tanggal_kirim = Column(DateTime, nullable=False)
     ditujukan_kepada = Column(String, nullable=False)
-    keterangan = Column(String, nullable=True)
+    perihal = Column(String, nullable=False)
+    keterangan = Column(String)
     file_path = Column(String, nullable=False)
-    inserted_at = Column(DateTime, nullable=False)
+    inserted_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    inserted_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    inserted_by = relationship("User", foreign_keys=[inserted_by_id], backref="surat_keluar_inserted")
+    dibaca_oleh = relationship("User", secondary=surat_keluar_dibaca_oleh, back_populates="surat_keluar_dibaca") 
 
 
 
