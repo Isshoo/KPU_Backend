@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
 class SuratKeluarService:
     def __init__(self):
@@ -13,7 +14,10 @@ class SuratKeluarService:
     def get_surat_keluar(self, page=1, per_page=10, search=None, start_date=None, end_date=None):
         db = SessionLocal()
         try:
-            query = db.query(SuratKeluar)
+            query = db.query(SuratKeluar).options(
+                joinedload(SuratKeluar.inserted_by),
+                joinedload(SuratKeluar.dibaca_oleh)
+            )
 
             # Apply filters
             if search:
@@ -55,7 +59,10 @@ class SuratKeluarService:
     def get_surat_by_id(self, surat_id):
         db = SessionLocal()
         try:
-            return db.query(SuratKeluar).filter(SuratKeluar.id == surat_id).first()
+            return db.query(SuratKeluar).options(
+                joinedload(SuratKeluar.inserted_by),
+                joinedload(SuratKeluar.dibaca_oleh)
+            ).filter(SuratKeluar.id == surat_id).first()
         finally:
             db.close()
 
@@ -81,7 +88,8 @@ class SuratKeluarService:
                 perihal=data['perihal'],
                 keterangan=data.get('keterangan'),
                 file_path=file_path,
-                inserted_by_id=user_id
+                inserted_by_id=user_id,
+                inserted_at=datetime.now()
             )
 
             db.add(surat)
