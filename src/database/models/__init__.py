@@ -82,6 +82,15 @@ class SuratKeluar(Base):
     inserted_by = relationship("User", foreign_keys=[inserted_by_id], backref="surat_keluar_inserted")
     dibaca_oleh = relationship("User", secondary=surat_keluar_dibaca_oleh, back_populates="surat_keluar_dibaca") 
 
+class TemplateSurat(Base):
+    __tablename__ = "template_surat"
+    id = Column(Integer, primary_key=True, index=True)
+    nama_template = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    inserted_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    inserted_at = Column(DateTime, default=datetime.utcnow)
+    
+
 
 
 
