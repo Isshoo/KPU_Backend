@@ -3,10 +3,12 @@ venv
 .venv
 __pycache__
 .DS_Store
-src/storage/hands/*
-src/storage/models/*
-src/storage/scans/*
-src/ml_models/*
+src/storage/surat_masuk/*
+src/storage/surat_keluar/*
+src/storage/template_surat/*
+src/storage/template_surat_keluar/*
+src/storage/template_surat_masuk/*
+src/storage/template_surat_keluar/*
 node_modules
 
 hand_scan_controller.log
