@@ -15,7 +15,7 @@ class SuratKeluarController:
         self.bp.route('/<int:surat_id>', methods=['GET'])(login_required(self.get_surat))
         self.bp.route('/', methods=['POST'])(login_required(self.create_surat))
         self.bp.route('/<int:surat_id>', methods=['PUT'])(login_required(self.update_surat))
-        self.bp.route('/<int:surat_id>', methods=['DELETE'])(admin_required(self.delete_surat))
+        self.bp.route('/<int:surat_id>', methods=['DELETE'])(login_required(self.delete_surat))
         self.bp.route('/<int:surat_id>/file', methods=['GET'])(login_required(self.get_file))
         self.bp.route('/<int:surat_id>/read', methods=['POST'])(login_required(self.mark_as_read))
 

@@ -11,6 +11,33 @@ class SuratKeluarService:
         self.upload_folder = "src/storage/surat_keluar/"
         os.makedirs(self.upload_folder, exist_ok=True)
 
+    def _validate_nomor_surat(self, nomor_surat, exclude_id=None):
+        """
+        Validate if nomor surat already exists in database
+        
+        Args:
+            nomor_surat (str): Nomor surat to validate
+            exclude_id (int, optional): ID to exclude from validation (for updates)
+            
+        Returns:
+            tuple: (is_valid, error_message)
+        """
+        db = SessionLocal()
+        try:
+            query = db.query(SuratKeluar).filter(SuratKeluar.nomor_surat == nomor_surat)
+            
+            if exclude_id:
+                query = query.filter(SuratKeluar.id != exclude_id)
+            
+            existing_surat = query.first()
+            
+            if existing_surat:
+                return False, f"Nomor surat '{nomor_surat}' sudah dimasukkan"
+            
+            return True, None
+        finally:
+            db.close()
+
     def get_surat_keluar(self, page=1, per_page=10, search=None, start_date=None, end_date=None):
         db = SessionLocal()
         try:
@@ -72,6 +99,11 @@ class SuratKeluarService:
             if not file:
                 return None, "File surat harus diupload"
 
+            # Validate nomor surat - check if already exists
+            is_valid, error_message = self._validate_nomor_surat(data['nomor_surat'])
+            if not is_valid:
+                return None, error_message
+
             # Save file
             filename = secure_filename(file.filename)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -108,6 +140,12 @@ class SuratKeluarService:
             surat = db.query(SuratKeluar).filter(SuratKeluar.id == surat_id).first()
             if not surat:
                 return None, "Surat tidak ditemukan"
+            
+            # Validate nomor surat if it's being updated - check if already exists (excluding current surat)
+            if 'nomor_surat' in data and data['nomor_surat'] != surat.nomor_surat:
+                is_valid, error_message = self._validate_nomor_surat(data['nomor_surat'], exclude_id=surat_id)
+                if not is_valid:
+                    return None, error_message
 
             # Update fields
             if 'nomor_surat' in data:
