@@ -1,5 +1,5 @@
 from src.database.config import SessionLocal
-from src.database.models import SuratMasuk, User
+from src.database.models import SuratMasuk, User, SuratKeluar
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
@@ -34,11 +34,21 @@ class SuratMasukService:
             if existing_surat:
                 return False, f"Nomor surat '{nomor_surat}' sudah dimasukkan"
             
+            query = db.query(SuratKeluar).filter(SuratKeluar.nomor_surat == nomor_surat)
+            
+            if exclude_id:
+                query = query.filter(SuratKeluar.id != exclude_id)
+            
+            existing_surat = query.first()
+
+            if existing_surat:
+                return False, f"Nomor surat '{nomor_surat}' sudah dimasukkan di surat keluar"
+            
             return True, None
         finally:
             db.close()
 
-    def get_surat_masuk(self, page=1, per_page=10, search=None, start_date=None, end_date=None):
+    def get_surat_masuk(self, page=1, per_page=10, search=None, start_date=None, end_date=None, divisi=None):
         db = SessionLocal()
         try:
             query = db.query(SuratMasuk).options(
@@ -53,7 +63,8 @@ class SuratMasukService:
                     or_(
                         SuratMasuk.nomor_surat.ilike(search),
                         SuratMasuk.perihal.ilike(search),
-                        SuratMasuk.ditujukan_kepada.ilike(search)
+                        SuratMasuk.ditujukan_kepada.ilike(search),
+                        SuratMasuk.keterangan.ilike(search)
                     )
                 )
 
@@ -61,6 +72,9 @@ class SuratMasukService:
                 query = query.filter(SuratMasuk.tanggal_surat >= start_date)
             if end_date:
                 query = query.filter(SuratMasuk.tanggal_surat <= end_date)
+
+            if divisi:
+                query = query.filter(SuratMasuk.divisi == divisi)
 
             # Get total count
             total = query.count()
@@ -103,6 +117,10 @@ class SuratMasukService:
             is_valid, error_message = self._validate_nomor_surat(data['nomor_surat'])
             if not is_valid:
                 return None, error_message
+            
+            # Validate tanggal surat atau tanggal terima - check if tanggal surat or tanggal terima is greater than tanggal saat ini
+            if datetime.strptime(data['tanggal_surat'], '%Y-%m-%d') > datetime.now() or datetime.strptime(data['tanggal_terima'], '%Y-%m-%d') > datetime.now():
+                return None, "Tanggal surat atau tanggal terima tidak boleh lebih besar dari tanggal saat ini"
 
             # Save file
             filename = secure_filename(file.filename)
@@ -120,9 +138,11 @@ class SuratMasukService:
                 perihal=data['perihal'],
                 ditujukan_kepada=data['ditujukan_kepada'],
                 keterangan=data.get('keterangan'),
+                divisi=data['divisi'],
                 file_path=file_path,
                 inserted_by_id=user_id,
-                inserted_at=datetime.now()
+                inserted_at=datetime.now(),
+                dibaca_oleh_id=[]
             )
 
             db.add(surat)
@@ -147,6 +167,10 @@ class SuratMasukService:
                 is_valid, error_message = self._validate_nomor_surat(data['nomor_surat'], exclude_id=surat_id)
                 if not is_valid:
                     return None, error_message
+                
+            # Validate tanggal surat atau tanggal terima - check if tanggal surat or tanggal terima is greater than tanggal saat ini
+            if datetime.strptime(data['tanggal_surat'], '%Y-%m-%d') > datetime.now() or datetime.strptime(data['tanggal_terima'], '%Y-%m-%d') > datetime.now():
+                return None, "Tanggal surat atau tanggal terima tidak boleh lebih besar dari tanggal saat ini"
 
             # Update fields
             if 'nomor_surat' in data:
@@ -163,6 +187,8 @@ class SuratMasukService:
                 surat.ditujukan_kepada = data['ditujukan_kepada']
             if 'keterangan' in data:
                 surat.keterangan = data['keterangan']
+            if 'divisi' in data:
+                surat.divisi = data['divisi']
 
             # Handle file upload if provided
             if file:

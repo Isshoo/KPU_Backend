@@ -1,9 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Table
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Table, ARRAY
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from src.database.config import Base
 import enum
-from sqlalchemy import ARRAY
 
 class RoleEnum(str, enum.Enum):
     sekertaris = "sekertaris"
@@ -55,10 +54,12 @@ class SuratMasuk(Base):
     perihal = Column(String, nullable=False)
     pengirim = Column(String, nullable=False)
     ditujukan_kepada = Column(String, nullable=False)
+    divisi = Column(Enum(DivisiEnum), nullable=False)
     keterangan = Column(String, nullable=True)
     file_path = Column(String, nullable=False)
     inserted_at = Column(DateTime, nullable=False)
     inserted_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    dibaca_oleh_id = Column(ARRAY(Integer), nullable=True)
 
     # Relationships
     inserted_by = relationship("User", foreign_keys=[inserted_by_id], backref="surat_masuk_inserted")
@@ -73,14 +74,16 @@ class SuratKeluar(Base):
     tanggal_kirim = Column(DateTime, nullable=False)
     ditujukan_kepada = Column(String, nullable=False)
     perihal = Column(String, nullable=False)
+    divisi = Column(Enum(DivisiEnum), nullable=False)
     keterangan = Column(String)
     file_path = Column(String, nullable=False)
     inserted_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     inserted_at = Column(DateTime, default=datetime.utcnow)
+    dibaca_oleh_id = Column(ARRAY(Integer), nullable=True)
 
     # Relationships
     inserted_by = relationship("User", foreign_keys=[inserted_by_id], backref="surat_keluar_inserted")
-    dibaca_oleh = relationship("User", secondary=surat_keluar_dibaca_oleh, back_populates="surat_keluar_dibaca") 
+    dibaca_oleh = relationship("User", secondary=surat_keluar_dibaca_oleh, back_populates="surat_keluar_dibaca")
 
 class TemplateSurat(Base):
     __tablename__ = "template_surat"

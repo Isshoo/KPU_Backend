@@ -58,9 +58,10 @@ class SuratKeluarController:
                 "ditujukan_kepada": s.ditujukan_kepada,
                 "perihal": s.perihal,
                 "keterangan": s.keterangan,
+                "divisi": s.divisi,
                 "inserted_by": s.inserted_by.nama_lengkap if s.inserted_by else None,
                 "inserted_at": s.inserted_at.strftime('%Y-%m-%d %H:%M:%S'),
-                "dibaca_oleh": [user.nama_lengkap for user in s.dibaca_oleh] if s.dibaca_oleh else []
+                "dibaca_oleh_id": s.dibaca_oleh_id
             } for s in result["surat_list"]]
 
             return jsonify({
@@ -87,9 +88,10 @@ class SuratKeluarController:
                 "ditujukan_kepada": surat.ditujukan_kepada,
                 "perihal": surat.perihal,
                 "keterangan": surat.keterangan,
+                "divisi": surat.divisi,
                 "inserted_by": surat.inserted_by.nama_lengkap if surat.inserted_by else None,
                 "inserted_at": surat.inserted_at.strftime('%Y-%m-%d %H:%M:%S'),
-                "dibaca_oleh": [user.nama_lengkap for user in surat.dibaca_oleh] if surat.dibaca_oleh else []
+                "dibaca_oleh_id": surat.dibaca_oleh_id
             }
 
             return jsonify({"status": "success", "data": surat_dict}), 200
@@ -103,7 +105,7 @@ class SuratKeluarController:
             file = request.files.get('file')
 
             # Validate required fields
-            required_fields = ['nomor_surat', 'tanggal_surat', 'tanggal_kirim', 'ditujukan_kepada', 'perihal']
+            required_fields = ['nomor_surat', 'tanggal_surat', 'tanggal_kirim', 'ditujukan_kepada', 'perihal', 'divisi']
             for field in required_fields:
                 if field not in data:
                     return jsonify({"status": "error", "message": f"Field {field} is required"}), 400
@@ -127,7 +129,9 @@ class SuratKeluarController:
                     "tanggal_surat": surat.tanggal_surat.strftime('%Y-%m-%d'),
                     "tanggal_kirim": surat.tanggal_kirim.strftime('%Y-%m-%d'),
                     "ditujukan_kepada": surat.ditujukan_kepada,
-                    "perihal": surat.perihal
+                    "perihal": surat.perihal,
+                    "divisi": surat.divisi,
+                    "keterangan": surat.keterangan
                 }
             }), 201
         except Exception as e:
@@ -159,7 +163,9 @@ class SuratKeluarController:
                     "tanggal_surat": surat.tanggal_surat.strftime('%Y-%m-%d'),
                     "tanggal_kirim": surat.tanggal_kirim.strftime('%Y-%m-%d'),
                     "ditujukan_kepada": surat.ditujukan_kepada,
-                    "perihal": surat.perihal
+                    "perihal": surat.perihal,
+                    "divisi": surat.divisi,
+                    "keterangan": surat.keterangan
                 }
             }), 200
         except Exception as e:
