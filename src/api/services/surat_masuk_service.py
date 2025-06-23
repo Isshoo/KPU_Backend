@@ -52,8 +52,7 @@ class SuratMasukService:
         db = SessionLocal()
         try:
             query = db.query(SuratMasuk).options(
-                joinedload(SuratMasuk.inserted_by),
-                joinedload(SuratMasuk.dibaca_oleh)
+                joinedload(SuratMasuk.inserted_by)
             )
 
             # Apply filters
@@ -101,8 +100,7 @@ class SuratMasukService:
         db = SessionLocal()
         try:
             return db.query(SuratMasuk).options(
-                joinedload(SuratMasuk.inserted_by),
-                joinedload(SuratMasuk.dibaca_oleh)
+                joinedload(SuratMasuk.inserted_by)
             ).filter(SuratMasuk.id == surat_id).first()
         finally:
             db.close()
@@ -238,16 +236,30 @@ class SuratMasukService:
         try:
             surat = db.query(SuratMasuk).filter(SuratMasuk.id == surat_id).first()
             if not surat:
+                db.close()
                 return False, "Surat tidak ditemukan"
 
+            # Check if user exists
             user = db.query(User).filter(User.id == user_id).first()
             if not user:
+                db.close()
                 return False, "User tidak ditemukan"
+            
+            # The `dibaca_oleh_id` is an ARRAY field. We'll work with it directly.
+            # Initialize it if it is None
+            if surat.dibaca_oleh_id is None:
+                surat.dibaca_oleh_id = []
 
-            if user not in surat.dibaca_oleh:
-                surat.dibaca_oleh.append(user)
+            # Add user_id if not already present
+            if user_id not in surat.dibaca_oleh_id:
+                # To trigger a change in an ARRAY column, you need to assign a new list.
+                # Appending to the existing list in-place might not be detected by SQLAlchemy.
+                new_dibaca_oleh_id = list(surat.dibaca_oleh_id)
+                new_dibaca_oleh_id.append(user_id)
+                surat.dibaca_oleh_id = new_dibaca_oleh_id
+                
                 db.commit()
-
+            
             return True, None
         except Exception as e:
             db.rollback()

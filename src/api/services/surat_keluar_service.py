@@ -52,8 +52,7 @@ class SuratKeluarService:
         db = SessionLocal()
         try:
             query = db.query(SuratKeluar).options(
-                joinedload(SuratKeluar.inserted_by),
-                joinedload(SuratKeluar.dibaca_oleh)
+                joinedload(SuratKeluar.inserted_by)
             )
 
             # Apply filters
@@ -101,8 +100,7 @@ class SuratKeluarService:
         db = SessionLocal()
         try:
             return db.query(SuratKeluar).options(
-                joinedload(SuratKeluar.inserted_by),
-                joinedload(SuratKeluar.dibaca_oleh)
+                joinedload(SuratKeluar.inserted_by)
             ).filter(SuratKeluar.id == surat_id).first()
         finally:
             db.close()
@@ -235,14 +233,25 @@ class SuratKeluarService:
         try:
             surat = db.query(SuratKeluar).filter(SuratKeluar.id == surat_id).first()
             if not surat:
+                db.close()
                 return False, "Surat tidak ditemukan"
 
+            # Check if user exists
             user = db.query(User).filter(User.id == user_id).first()
             if not user:
+                db.close()
                 return False, "User tidak ditemukan"
 
-            if user not in surat.dibaca_oleh:
-                surat.dibaca_oleh.append(user)
+            # Initialize dibaca_oleh_id if it's None
+            if surat.dibaca_oleh_id is None:
+                surat.dibaca_oleh_id = []
+
+            # Add user_id if not already present
+            if user_id not in surat.dibaca_oleh_id:
+                new_dibaca_oleh_id = list(surat.dibaca_oleh_id)
+                new_dibaca_oleh_id.append(user_id)
+                surat.dibaca_oleh_id = new_dibaca_oleh_id
+                
                 db.commit()
 
             return True, None
