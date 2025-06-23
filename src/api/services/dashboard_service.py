@@ -6,15 +6,21 @@ class DashboardService:
     def __init__(self):
         pass
 
-    def get_stats(self):
+    def get_stats(self, divisi=None):
         db = SessionLocal()
 
         try:
-            # Get total surat masuk
-            total_surat_masuk = db.query(SuratMasuk).count()
+            if divisi:
+                # Get total surat masuk
+                total_surat_masuk = db.query(SuratMasuk).filter(SuratMasuk.divisi == divisi).count()
+                # Get total surat keluar
+                total_surat_keluar = db.query(SuratKeluar).filter(SuratKeluar.divisi == divisi).count()
+            else:
+                # Get total surat masuk
+                total_surat_masuk = db.query(SuratMasuk).count()
+                # Get total surat keluar
+                total_surat_keluar = db.query(SuratKeluar).count()
 
-            # Get total surat keluar
-            total_surat_keluar = db.query(SuratKeluar).count()
 
             # Get total anggota (users)
             total_anggota = db.query(User).count()

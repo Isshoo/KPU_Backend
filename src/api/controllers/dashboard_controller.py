@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from src.api.services.dashboard_service import DashboardService
 from src.utils.jwt_helper import admin_required, login_required
 
@@ -13,7 +13,8 @@ class DashboardController:
 
     def get_stats(self):
         try:
-            stats = self.dashboard_service.get_stats()
+            divisi = request.args.get('divisi', None)
+            stats = self.dashboard_service.get_stats(divisi=divisi)
             return jsonify({
                 'status': 'success',
                 'data': stats

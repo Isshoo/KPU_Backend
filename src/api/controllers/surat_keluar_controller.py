@@ -27,6 +27,7 @@ class SuratKeluarController:
             search = request.args.get('search', None)
             start_date = request.args.get('start_date', None)
             end_date = request.args.get('end_date', None)
+            divisi = request.args.get('divisi', None)
 
             # Convert dates if provided
             if start_date:
@@ -46,7 +47,8 @@ class SuratKeluarController:
                 per_page=per_page,
                 search=search,
                 start_date=start_date,
-                end_date=end_date
+                end_date=end_date,
+                divisi=divisi
             )
 
             # Format surat list
