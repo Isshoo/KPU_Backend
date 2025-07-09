@@ -80,6 +80,23 @@ class UserService:
     def create_user(self, nama_lengkap, role, divisi):
         session = SessionLocal()
         try:
+            # Validasi nama_lengkap unik
+            existing_user = session.query(User).filter(User.nama_lengkap == nama_lengkap).first()
+            if existing_user:
+                return None, "Nama lengkap sudah digunakan."
+
+            # Validasi sekertaris hanya 1
+            if role == 'sekertaris':
+                sekertaris = session.query(User).filter(User.role == 'sekertaris').first()
+                if sekertaris:
+                    return None, "Hanya boleh ada satu sekertaris."
+
+            # Validasi kasub hanya 1 per divisi
+            if role == 'kasub' and divisi:
+                kasub = session.query(User).filter(User.role == 'kasub', User.divisi == divisi).first()
+                if kasub:
+                    return None, f"Sudah ada Kepala Sub Bagian untuk divisi {divisi}."
+
             # Generate temporary username untuk mendapatkan ID
             temp_username = f"temp_{nama_lengkap.lower().replace(' ', '_')}"
             new_user = User(
@@ -89,18 +106,15 @@ class UserService:
                 role=role,
                 divisi=divisi
             )
-            
             session.add(new_user)
             session.commit()
             session.refresh(new_user)
-            
             # Update username dengan ID yang sudah ada
             new_username = self.generate_username(nama_lengkap, new_user.id)
             new_user.username = new_username
             new_user.password_hash = generate_password_hash(new_username)
             session.commit()
             session.refresh(new_user)
-            
             return new_user, None
         except Exception as e:
             session.rollback()
@@ -115,14 +129,44 @@ class UserService:
             if not user:
                 return None, "User not found"
 
-            if 'nama_lengkap' in data:
+            nama_lengkap_changed = False
+            if 'nama_lengkap' in data and data['nama_lengkap'] != user.nama_lengkap:
+                # Validasi nama_lengkap unik
+                existing_user = session.query(User).filter(User.nama_lengkap == data['nama_lengkap'], User.id != user_id).first()
+                if existing_user:
+                    return None, "Nama lengkap sudah digunakan."
                 user.nama_lengkap = data['nama_lengkap']
+                nama_lengkap_changed = True
 
             if 'role' in data:
-                user.role = data['role']
+                new_role = data['role']
+                # Validasi sekertaris hanya 1
+                if new_role == 'sekertaris' and user.role != 'sekertaris':
+                    sekertaris = session.query(User).filter(User.role == 'sekertaris', User.id != user_id).first()
+                    if sekertaris:
+                        return None, "Hanya boleh ada satu sekertaris."
+                # Validasi kasub hanya 1 per divisi
+                if new_role == 'kasub':
+                    divisi_val = data.get('divisi', user.divisi)
+                    kasub = session.query(User).filter(User.role == 'kasub', User.divisi == divisi_val, User.id != user_id).first()
+                    if kasub:
+                        return None, f"Sudah ada Kepala Sub Bagian untuk divisi {divisi_val}."
+                user.role = new_role
 
             if 'divisi' in data:
-                user.divisi = data['divisi']
+                new_divisi = data['divisi']
+                # Jika role kasub, validasi kasub hanya 1 per divisi
+                if user.role == 'kasub':
+                    kasub = session.query(User).filter(User.role == 'kasub', User.divisi == new_divisi, User.id != user_id).first()
+                    if kasub:
+                        return None, f"Sudah ada Kepala Sub Bagian untuk divisi {new_divisi}."
+                user.divisi = new_divisi
+
+            # If nama_lengkap changed, update username and password_hash
+            if nama_lengkap_changed:
+                new_username = self.generate_username(user.nama_lengkap, user.id)
+                user.username = new_username
+                user.password_hash = generate_password_hash(new_username)
 
             session.commit()
             session.refresh(user)
